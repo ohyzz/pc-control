@@ -1,1 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
 
+<body>
+
+<div class="app">
+
+<div class="machine-header">
+<p class="machine-label">APPLICATIONS</p>
+<p class="machine-name">LAUNCHER</p>
+</div>
+
+<div class="apps-grid" id="apps-grid"></div>
+
+</div>
+
+<nav class="nav-bar">
+<div class="nav-pill">
+
+<div class="nav-item" onclick="location.href='/'">
+<div class="nav-icon"></div>
+<span class="nav-label">HOME</span>
+</div>
+
+<div class="nav-item">
+<div class="nav-icon active"></div>
+<span class="nav-label active">FILES</span>
+</div>
+
+<div class="nav-item" onclick="location.href='/shell'">
+<div class="nav-icon"></div>
+<span class="nav-label">SHELL</span>
+</div>
+
+<div class="nav-item" onclick="location.href='/scripts'">
+    <div class="nav-icon"></div>
+<span class="nav-label">SCRIPTS</span>
+</div>
+
+</div>
+</nav>
+
+<script>
+
+async function loadApps(){
+
+ const r = await fetch("/apps")
+ const apps = await r.json()
+
+ const grid = document.getElementById("apps-grid")
+
+ for(const app of apps){
+
+  const btn = document.createElement("button")
+
+  btn.className = "app-btn glass-bright"
+
+  btn.innerHTML = `
+  <img class="app-icon-img" src="/icon/${app.icon}">
+  ${app.name}
+  `
+
+  btn.onclick = () => run(app.exec)
+
+  grid.appendChild(btn)
+
+ }
+
+}
+
+function run(cmd){
+
+ fetch("/run_app",{
+  method:"POST",
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({cmd:cmd})
+ })
+
+}
+
+loadApps()
+</script>
+
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" href="/static/style.css">
+
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="machine-header">
+
+<p class="machine-label">REMOTE</p>
+<p class="machine-name">TERMINAL</p>
+
+</div>
+
+
+<div class="terminal glass">
+
+<div id="terminal-output"></div>
+
+<div class="terminal-input">
+
+<span class="terminal-prompt">$</span>
+
+<input
+id="terminal-cmd"
+type="text"
+autocomplete="off"
+placeholder="type command..."
+>
+
+</div>
+
+</div>
+
+</div>
+
+
+<nav class="nav-bar">
+
+<div class="nav-pill">
+
+<div class="nav-item" onclick="location.href='/'">
+    <div class="nav-icon"></div>
+<span class="nav-label">HOME</span>
+</div>
+
+<div class="nav-item" onclick="location.href='/files'">
+    <div class="nav-icon "></div>
+<span class="nav-label">FILES</span>
+</div>
+
+<div class="nav-item">
+    <div class="nav-icon active"></div>
+<span class="nav-label active">SHELL</span>
+</div>
+
+<div class="nav-item" onclick="location.href='/scripts'">
+    <div class="nav-icon"></div>
+<span class="nav-label">SCRIPTS</span>
+</div>
+
+</div>
+
+</nav>
+
+
+<script>
+
+const input = document.getElementById("terminal-cmd")
+const output = document.getElementById("terminal-output")
+
+input.addEventListener("keydown", async (e)=>{
+
+ if(e.key === "Enter"){
+
+  const cmd = input.value
+
+  output.innerHTML += `<div class="cmd">$ ${cmd}</div>`
+
+  input.value = ""
+
+  const r = await fetch("/terminal",{
+   method:"POST",
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({cmd})
+  })
+
+  const data = await r.json()
+
+  output.innerHTML += `<pre>${data.output}</pre>`
+
+  output.scrollTop = output.scrollHeight
+
+ }
+
+})
+
+</script>
+
+</body>
+</html>

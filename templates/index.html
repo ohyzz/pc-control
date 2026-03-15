@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Signal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:rgba(0,255,136,0.85);
+  --green-dim:rgba(0,255,136,0.35);
+  --text:rgba(220,235,255,0.88);
+  --text-dim:rgba(180,200,255,0.35);
+  --text-mid:rgba(180,200,255,0.55);
+  --mono:'Space Mono',monospace;
+}
+html,body{height:100%;background:#080c14;color:var(--text);font-family:var(--mono);overflow-x:hidden}
+body::before,body::after{content:'';position:fixed;border-radius:50%;pointer-events:none;z-index:0}
+body::before{width:280px;height:280px;background:rgba(0,180,100,0.12);top:-80px;left:-80px;filter:blur(60px)}
+body::after{width:240px;height:240px;background:rgba(60,120,255,0.09);bottom:100px;right:-60px;filter:blur(70px)}
+.blob-mid{position:fixed;width:180px;height:180px;border-radius:50%;background:rgba(180,255,0,0.06);top:38%;left:20%;filter:blur(50px);pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;max-width:420px;margin:0 auto;padding:0 0 90px;min-height:100vh}
+.glass{background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);border-top:0.5px solid rgba(255,255,255,0.2);border-radius:20px;backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%)}
+.glass-bright{background:rgba(255,255,255,0.065);border:0.5px solid rgba(255,255,255,0.15);border-top:0.5px solid rgba(255,255,255,0.28);border-radius:16px;backdrop-filter:blur(32px) saturate(200%);-webkit-backdrop-filter:blur(32px) saturate(200%)}
+.statusbar{display:flex;justify-content:space-between;align-items:center;padding:18px 24px 0}
+.statusbar .time{font-size:11px;color:rgba(200,220,255,0.4)}
+.live-badge{display:flex;align-items:center;gap:6px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px rgba(0,255,136,0.9);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 6px rgba(0,255,136,0.7)}50%{box-shadow:0 0 14px rgba(0,255,136,1)}}
+.live-label{font-size:10px;color:var(--green);letter-spacing:.1em}
+.machine-header{padding:18px 24px 0}
+.machine-label{font-size:10px;color:var(--text-dim);letter-spacing:.12em}
+.machine-name{font-size:26px;font-weight:700;color:rgba(230,240,255,0.95);letter-spacing:-.02em;margin-top:4px}
+.machine-ip{font-size:11px;color:rgba(120,150,200,0.4);margin-top:3px}
+.machine-ip span{color:var(--green-dim);margin-left:8px}
+.card{margin:12px 16px 0;padding:14px 18px}
+.section-label{font-size:9px;color:var(--text-dim);letter-spacing:.14em;margin-bottom:12px}
+.metric{display:flex;flex-direction:column;gap:11px}
+.metric-row{display:flex;flex-direction:column;gap:5px}
+.metric-header{display:flex;justify-content:space-between}
+.metric-key{font-size:9px;color:var(--text-dim);letter-spacing:.12em}
+.metric-val{font-size:9px;color:var(--text-mid)}
+.bar-track{height:3px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.bar-green{background:rgba(0,255,136,0.7)}
+.bar-yellow{background:rgba(180,255,0,0.7)}
+.proc-list{display:flex;flex-direction:column;gap:9px}
+.proc-row{display:flex;justify-content:space-between;align-items:center}
+.proc-name-wrap{display:flex;align-items:center;gap:9px}
+.proc-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.dot-green{background:rgba(0,255,136,0.85);box-shadow:0 0 4px rgba(0,255,136,0.6)}
+.dot-red{background:rgba(255,80,80,0.85);box-shadow:0 0 4px rgba(255,60,60,0.5)}
+.dot-gray{background:rgba(150,170,220,0.4)}
+.proc-name{font-size:11px;color:rgba(210,225,255,0.75)}
+.proc-mem{font-size:10px;color:rgba(150,170,220,0.38)}
+.vol-wrap{display:flex;align-items:center;gap:12px}
+.vol-icon{flex-shrink:0;opacity:.35}
+.vol-val-label{font-size:9px;color:var(--text-mid);min-width:28px;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:3px;border-radius:2px;outline:none;cursor:pointer;background:rgba(255,255,255,0.1)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:rgba(220,235,255,0.92);border:0.5px solid rgba(255,255,255,0.5);box-shadow:0 0 8px rgba(0,255,136,0.45);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:rgba(220,235,255,0.92);border:0.5px solid rgba(255,255,255,0.5);cursor:pointer}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 16px 0}
+.stat-pill{padding:10px 12px}
+.stat-key{font-size:8px;color:rgba(150,175,230,0.35);letter-spacing:.1em;display:block;margin-bottom:4px}
+.stat-val{font-size:12px;color:rgba(200,220,255,0.85)}
+.stat-pill-red{background:rgba(255,40,40,0.08);border:0.5px solid rgba(255,80,80,0.18);border-top:0.5px solid rgba(255,80,80,0.32);border-radius:16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:10px 12px;cursor:pointer;transition:background .15s;-webkit-tap-highlight-color:transparent}
+.stat-pill-red:active{background:rgba(255,40,40,0.18)}
+.stat-key-red{font-size:8px;color:rgba(255,100,100,0.45);letter-spacing:.1em;display:block;margin-bottom:4px}
+.stat-val-red{font-size:12px;color:rgba(255,130,130,0.9)}
+.modal-overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;padding-bottom:20px}
+.modal-overlay.open{display:flex}
+.modal-sheet{width:calc(100% - 32px);max-width:420px;background:rgba(18,24,42,0.92);border:0.5px solid rgba(255,255,255,0.12);border-top:0.5px solid rgba(255,255,255,0.24);border-radius:24px;padding:20px 20px 16px;backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px)}
+.modal-title{font-size:10px;color:var(--text-dim);letter-spacing:.12em;margin-bottom:14px}
+.modal-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:13px 16px;border-radius:14px;border:0.5px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:var(--text);font-family:var(--mono);font-size:12px;cursor:pointer;margin-bottom:8px;transition:background .15s;-webkit-tap-highlight-color:transparent}
+.modal-btn:active{background:rgba(255,255,255,0.09)}
+.modal-btn-red{border-color:rgba(255,80,80,0.2);background:rgba(255,40,40,0.07);color:rgba(255,130,130,0.9);margin-bottom:0}
+.modal-btn-red:active{background:rgba(255,40,40,0.16)}
+.modal-cancel{display:block;width:100%;margin-top:10px;padding:12px;border-radius:14px;border:0.5px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.03);color:rgba(180,200,255,0.4);font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:.06em}
+.nav-bar{position:fixed;bottom:0;left:0;right:0;z-index:10;display:flex;justify-content:center;padding:0 16px 12px}
+.nav-pill{width:100%;max-width:420px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);border-top:0.5px solid rgba(255,255,255,0.2);border-radius:28px;padding:10px 28px 13px;backdrop-filter:blur(32px) saturate(180%);-webkit-backdrop-filter:blur(32px) saturate(180%);display:flex;justify-content:space-around;align-items:center}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.nav-icon{width:20px;height:20px;border-radius:6px;border:1px solid rgba(255,255,255,0.1)}
+.nav-icon.active{border:1.5px solid rgba(0,255,136,0.7);background:rgba(0,255,136,0.08)}
+.nav-label{font-size:8px;letter-spacing:.07em;color:rgba(150,170,220,0.28)}
+.nav-label.active{color:rgba(0,255,136,0.7)}
+.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:rgba(0,255,136,0.1);border:0.5px solid rgba(0,255,136,0.3);border-radius:20px;padding:8px 20px;font-size:11px;color:var(--green);backdrop-filter:blur(20px);z-index:200;opacity:0;transition:opacity .2s;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1}
+.cards{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:12px;
+margin:16px;
+}
+
+.cards button{
+font-family:'Space Mono',monospace;
+font-size:12px;
+padding:18px;
+cursor:pointer;
+color:rgba(220,235,255,0.9);
+}
+</style>
+</head>
+<body>
+<div class="blob-mid"></div>
+<div class="toast" id="toast"></div>
+<div class="app">
+ 
+  <div class="statusbar">
+    <span class="time" id="clock">--:--</span>
+    <div class="live-badge">
+      <div class="live-dot" id="live-dot"></div>
+      <span class="live-label" id="live-label">CONNECTING</span>
+    </div>
+  </div>
+ 
+  <div class="machine-header">
+    <p class="machine-label">REMOTE MACHINE</p>
+    <p class="machine-name">WORKSTATION</p>
+    <p class="machine-ip">arch linux · ohyz<span id="ping-label">— ms</span></p>
+  </div>
+ 
+  <div class="card glass">
+    <div class="metric">
+      <div class="metric-row">
+        <div class="metric-header">
+          <span class="metric-key">CPU</span>
+          <span class="metric-val" id="cpu-val">—%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill bar-green" id="cpu-bar" style="width:0%"></div></div>
+      </div>
+      <div class="metric-row">
+        <div class="metric-header">
+          <span class="metric-key">RAM</span>
+          <span class="metric-val" id="ram-val">— / — GB</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill bar-green" id="ram-bar" style="width:0%"></div></div>
+      </div>
+      <div class="metric-row">
+        <div class="metric-header">
+          <span class="metric-key">GPU</span>
+          <span class="metric-val" id="gpu-val">—%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill bar-yellow" id="gpu-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+ 
+  <div class="card glass">
+    <p class="section-label">PROCESSES</p>
+    <div class="proc-list" id="proc-list">
+      <div class="proc-row">
+        <div class="proc-name-wrap">
+          <div class="proc-dot dot-gray"></div>
+          <span class="proc-name" style="color:rgba(150,170,220,0.3)">loading...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <div class="card glass">
+    <div class="metric-header" style="margin-bottom:12px">
+      <span class="section-label" style="margin:0">VOLUME</span>
+      <span class="vol-val-label" id="vol-display">—%</span>
+    </div>
+    <div class="vol-wrap">
+      <svg class="vol-icon" width="14" height="12" viewBox="0 0 14 12" fill="none">
+        <path d="M2 4.5h2l2.5-2.5v8L4 7.5H2v-3z" fill="rgba(180,200,255,1)"/>
+      </svg>
+      <input type="range" id="vol-slider" min="0" max="100" value="50" step="1">
+      <svg class="vol-icon" width="16" height="12" viewBox="0 0 16 12" fill="none">
+        <path d="M2 4.5h2l2.5-2.5v8L4 7.5H2v-3z" fill="rgba(180,200,255,1)"/>
+        <path d="M9 2c2 1 3 2.8 3 4s-1 3-3 4" stroke="rgba(180,200,255,1)" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M11 0.5c2.5 1.5 3.5 3.5 3.5 5.5s-1 4-3.5 5.5" stroke="rgba(180,200,255,1)" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+ 
+  <div class="stats-grid">
+    <div class="stat-pill glass-bright">
+      <span class="stat-key">DISPLAY</span>
+      <span class="stat-val" id="display-val">ON</span>
+    </div>
+    <div class="stat-pill glass-bright">
+      <span class="stat-key">UPTIME</span>
+      <span class="stat-val" id="uptime-val">—</span>
+    </div>
+    <div class="stat-pill-red" onclick="openPower()">
+      <span class="stat-key-red">POWER</span>
+      <span class="stat-val-red">CTRL</span>
+    </div>
+  </div>
+ 
+</div>
+ 
+<nav class="nav-bar">
+  <div class="nav-pill">
+    <div class="nav-item">
+      <div class="nav-icon active"></div>
+      <span class="nav-label active">HOME</span>
+    </div>
+    <div class="nav-item" onclick="location.href='/files'">
+        <div class="nav-icon"></div>
+        <span class="nav-label">FILES</span>
+    </div>
+    <div class="nav-item" onclick="location.href='/shell'">
+      <div class="nav-icon"></div>
+      <span class="nav-label">SHELL</span>
+    </div>
+    <div class="nav-item" onclick="location.href='/scripts'">
+    <div class="nav-icon"></div>
+<span class="nav-label">SCRIPTS</span>
+    </div>
+  </div>
+</nav>
+ 
+<div class="modal-overlay" id="power-modal">
+  <div class="modal-sheet">
+    <p class="modal-title">POWER CONTROL</p>
+    <button class="modal-btn" onclick="doAction('/sleep','Sleep')">
+      <span>Sleep</span><span style="color:rgba(180,200,255,0.3);font-size:10px">suspend to RAM</span>
+    </button>
+    <button class="modal-btn" onclick="doAction('/reboot','Reboot')">
+      <span>Reboot</span><span style="color:rgba(180,200,255,0.3);font-size:10px">restart system</span>
+    </button>
+    <button class="modal-btn modal-btn-red" onclick="doAction('/shutdown','Shutdown')">
+      <span>Shutdown</span><span style="font-size:10px;opacity:.5">power off</span>
+    </button>
+    <button class="modal-cancel" onclick="closePower()">CANCEL</button>
+  </div>
+</div>
+ 
+<script>
+function updateClock(){
+  const d=new Date();
+  document.getElementById('clock').textContent=
+    String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+updateClock();
+setInterval(updateClock,10000);
+ 
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+ 
+async function fetchStatus(){
+  const start=Date.now();
+  try{
+    const r=await fetch('/status');
+    const ping=Date.now()-start;
+    document.getElementById('ping-label').textContent=ping+'ms';
+    document.getElementById('live-dot').style.cssText='width:7px;height:7px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px rgba(0,255,136,0.9);animation:pulse 2s ease-in-out infinite';
+    document.getElementById('live-label').textContent='LIVE';
+    const d=await r.json();
+    document.getElementById('cpu-val').textContent=d.cpu+'%';
+    document.getElementById('cpu-bar').style.width=d.cpu+'%';
+    document.getElementById('ram-val').textContent=d.ram_used+' / '+d.ram_total+' GB';
+    document.getElementById('ram-bar').style.width=d.ram+'%';
+    document.getElementById('gpu-val').textContent=d.gpu+'%';
+    document.getElementById('gpu-bar').style.width=d.gpu+'%';
+    document.getElementById('uptime-val').textContent=d.uptime;
+    if(d.processes&&d.processes.length){
+      document.getElementById('proc-list').innerHTML=d.processes.map(p=>{
+        const dot=p.mem.includes('GB')?'dot-red':'dot-green';
+        return`<div class="proc-row"><div class="proc-name-wrap"><div class="proc-dot ${dot}"></div><span class="proc-name">${p.name}</span></div><span class="proc-mem">${p.mem}</span></div>`;
+      }).join('');
+    }
+  }catch(e){
+    document.getElementById('live-dot').style.cssText='width:7px;height:7px;border-radius:50%;background:rgba(255,80,80,0.8);box-shadow:0 0 8px rgba(255,60,60,0.7)';
+    document.getElementById('live-label').textContent='OFFLINE';
+    document.getElementById('ping-label').textContent='—';
+  }
+}
+fetchStatus();
+setInterval(fetchStatus,3000);
+ 
+async function fetchVolume(){
+  try{
+    const r=await fetch('/volume_get');
+    const d=await r.json();
+    setSlider(d.volume);
+  }catch(e){}
+}
+fetchVolume();
+ 
+const slider=document.getElementById('vol-slider');
+const volDisplay=document.getElementById('vol-display');
+function setSlider(v){
+  slider.value=v;
+  volDisplay.textContent=v+'%';
+  slider.style.background=`linear-gradient(to right,rgba(0,255,136,0.7) 0%,rgba(0,255,136,0.7) ${v}%,rgba(255,255,255,0.1) ${v}%)`;
+}
+let volTimer=null;
+slider.addEventListener('input',()=>{
+  setSlider(slider.value);
+  clearTimeout(volTimer);
+  volTimer=setTimeout(()=>{
+    fetch('/volume_set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level:parseInt(slider.value)})});
+  },200);
+});
+ 
+function openPower(){document.getElementById('power-modal').classList.add('open')}
+function closePower(){document.getElementById('power-modal').classList.remove('open')}
+document.getElementById('power-modal').addEventListener('click',function(e){if(e.target===this)closePower()});
+async function doAction(endpoint,label){
+  closePower();showToast(label+' command sent');
+  try{await fetch(endpoint);}catch(e){}
+}
+</script>
+</body>
+</html>
